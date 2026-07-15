@@ -1220,3 +1220,148 @@ section {
         text-align: left;
     }
 }
+/* ================================
+   Phase 2 Form Validation
+================================ */
+
+.form-group .input-error {
+    border-color: #d64545;
+    background: #fffafa;
+    box-shadow: 0 0 0 4px rgba(214, 69, 69, 0.1);
+}
+
+.form-group .input-error:focus {
+    border-color: #d64545;
+    box-shadow: 0 0 0 4px rgba(214, 69, 69, 0.14);
+}
+
+.error-message {
+    display: block;
+    margin-top: 4px;
+    color: #d64545;
+    font-size: 12px;
+    font-weight: 500;
+    animation: errorAppear 0.25s ease;
+}
+
+.form-consent {
+    position: relative;
+    flex-wrap: wrap;
+}
+
+.form-consent.consent-error {
+    padding: 12px;
+    background: #fff0f0;
+    border: 1px solid rgba(214, 69, 69, 0.22);
+    border-radius: 10px;
+}
+
+.consent-error-message {
+    width: 100%;
+    margin-left: 27px;
+    color: #d64545;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.predict-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+    transform: none;
+}
+
+.predict-button.loading {
+    cursor: wait;
+    pointer-events: none;
+}
+
+.predict-button.loading:hover {
+    transform: none;
+}
+
+.result-content p {
+    margin-top: 5px;
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.result-card.approved .result-icon {
+    animation: successPulse 0.8s ease;
+}
+
+.result-card.rejected .result-icon {
+    animation: errorShake 0.5s ease;
+}
+
+.server-error-card {
+    margin-top: 25px;
+    padding: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    color: #b83232;
+    background: #fff0f0;
+    border: 1px solid rgba(214, 69, 69, 0.2);
+    border-radius: 12px;
+    animation: errorShake 0.5s ease;
+}
+
+.server-error-card i {
+    margin-top: 3px;
+    font-size: 20px;
+}
+
+.server-error-card span {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.server-error-card p {
+    margin-top: 3px;
+    font-size: 13px;
+}
+
+@keyframes errorAppear {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes successPulse {
+    0% {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    60% {
+        transform: scale(1.15);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes errorShake {
+    0%,100% {
+        transform: translateX(0);
+    }
+    20% {
+        transform: translateX(-6px);
+    }
+    40% {
+        transform: translateX(6px);
+    }
+    60% {
+        transform: translateX(-4px);
+    }
+    80% {
+        transform: translateX(4px);
+    }
+}
