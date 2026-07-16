@@ -1,33 +1,53 @@
 from flask import Flask, render_template, request
-import pickle
-import numpy as np
 import os
+import pickle
+
+import pandas as pd
 
 
 app = Flask(__name__)
 
 
-# Get the folder where app.py is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# --------------------------------------------------
+# Load trained machine-learning model
+# --------------------------------------------------
 
-# Create full model path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "loan_model.pkl")
 
-
-# Load trained machine-learning model
 with open(MODEL_PATH, "rb") as model_file:
     model = pickle.load(model_file)
 
 
+# Model input columns in exact training order
+MODEL_FEATURES = [
+    "Gender",
+    "Married",
+    "Dependents",
+    "Education",
+    "Self_Employed",
+    "ApplicantIncome",
+    "CoapplicantIncome",
+    "LoanAmount",
+    "Loan_Amount_Term",
+    "Credit_History",
+    "Property_Area"
+]
+
+
+# --------------------------------------------------
+# Numeric validation helper
+# --------------------------------------------------
+
 def parse_positive_number(value, field_name, allow_zero=False):
     """
-    Convert a form value into a number and validate it.
+    Convert a form value into float and validate it.
 
     allow_zero=False:
         Number must be greater than zero.
 
     allow_zero=True:
-        Number may be zero, but cannot be negative.
+        Number may be zero but cannot be negative.
     """
 
     try:
@@ -53,31 +73,61 @@ def parse_positive_number(value, field_name, allow_zero=False):
     return number
 
 
+# --------------------------------------------------
+# Home route
+# --------------------------------------------------
+
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
+# --------------------------------------------------
+# Prediction route
+# --------------------------------------------------
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # ---------------------------------
-        # Get categorical values from form
-        # ---------------------------------
+        # ------------------------------------------
+        # Read form values
+        # ------------------------------------------
 
         gender_value = request.form.get("Gender")
         married_value = request.form.get("Married")
         dependents_value = request.form.get("Dependents")
         education_value = request.form.get("Education")
         self_employed_value = request.form.get("Self_Employed")
-        property_area_value = request.form.get("Property_Area")
-        loan_term_value = request.form.get("Loan_Amount_Term")
-        credit_history_value = request.form.get("Credit_History")
+
+        applicant_income_value = request.form.get(
+            "ApplicantIncome"
+        )
+
+        coapplicant_income_value = request.form.get(
+            "CoapplicantIncome"
+        )
+
+        loan_amount_value = request.form.get(
+            "LoanAmount"
+        )
+
+        loan_term_value = request.form.get(
+            "Loan_Amount_Term"
+        )
+
+        credit_history_value = request.form.get(
+            "Credit_History"
+        )
+
+        property_area_value = request.form.get(
+            "Property_Area"
+        )
+
         consent_value = request.form.get("consent")
 
-        # ---------------------------------
-        # Required-field backend validation
-        # ---------------------------------
+        # ------------------------------------------
+        # Required-field validation
+        # ------------------------------------------
 
         required_fields = {
             "Gender": gender_value,
@@ -85,18 +135,19 @@ def predict():
             "Dependents": dependents_value,
             "Education": education_value,
             "Employment type": self_employed_value,
-            "Property area": property_area_value,
-            "Applicant income": request.form.get("ApplicantIncome"),
-            "Co-applicant income": request.form.get("CoapplicantIncome"),
-            "Loan amount": request.form.get("LoanAmount"),
+            "Applicant income": applicant_income_value,
+            "Co-applicant income": coapplicant_income_value,
+            "Loan amount": loan_amount_value,
             "Loan term": loan_term_value,
-            "Credit history": credit_history_value
+            "Credit history": credit_history_value,
+            "Property area": property_area_value
         }
 
         missing_fields = [
             field_name
             for field_name, field_value in required_fields.items()
-            if field_value is None or str(field_value).strip() == ""
+            if field_value is None
+            or str(field_value).strip() == ""
         ]
 
         if missing_fields:
@@ -107,12 +158,14 @@ def predict():
 
         if consent_value != "on":
             raise ValueError(
-                "Please confirm that the provided information is accurate."
+                "Please confirm that the provided information "
+                "is accurate."
             )
 
-        # ---------------------------------
+        # ------------------------------------------
         # Categorical mappings
-        # ---------------------------------
+        # Must match training-time encoding
+        # ------------------------------------------
 
         gender_mapping = {
             "Female": 0,
@@ -124,9 +177,16 @@ def predict():
             "Yes": 1
         }
 
+        dependents_mapping = {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3+": 3
+        }
+
         education_mapping = {
-            "Not Graduate": 0,
-            "Graduate": 1
+            "Graduate": 0,
+            "Not Graduate": 1
         }
 
         self_employed_mapping = {
@@ -140,102 +200,320 @@ def predict():
             "Urban": 2
         }
 
-        dependents_mapping = {
-            "0": 0,
-            "1": 1,
-            "2": 2,
-            "3+": 3
-        }
-
-        # ---------------------------------
+        # ------------------------------------------
         # Convert categorical values
-        # ---------------------------------
+        # ------------------------------------------
 
         gender = gender_mapping[gender_value]
         married = married_mapping[married_value]
         dependents = dependents_mapping[dependents_value]
         education = education_mapping[education_value]
-        self_employed = self_employed_mapping[self_employed_value]
-        property_area = property_area_mapping[property_area_value]
 
-        # ---------------------------------
-        # Secure numeric validation
-        # ---------------------------------
+        self_employed = self_employed_mapping[
+            self_employed_value
+        ]
+
+        property_area = property_area_mapping[
+            property_area_value
+        ]
+
+        # ------------------------------------------
+        # Validate numerical values
+        # ------------------------------------------
 
         applicant_income = parse_positive_number(
-            request.form.get("ApplicantIncome"),
+            applicant_income_value,
             "Applicant income"
         )
 
         coapplicant_income = parse_positive_number(
-            request.form.get("CoapplicantIncome"),
+            coapplicant_income_value,
             "Co-applicant income",
             allow_zero=True
         )
 
-        loan_amount = parse_positive_number(
-            request.form.get("LoanAmount"),
+        loan_amount_rupees = parse_positive_number(
+            loan_amount_value,
             "Loan amount"
         )
 
-        if loan_amount < 1000:
+        if loan_amount_rupees < 1000:
             raise ValueError(
                 "Loan amount must be at least ₹1,000."
             )
+
+        # Dataset stores LoanAmount in ₹1,000 units.
+        # Example: ₹150,000 becomes 150 for model input.
+        loan_amount_for_model = (
+            loan_amount_rupees / 1000
+        )
 
         loan_amount_term = parse_positive_number(
             loan_term_value,
             "Loan term"
         )
 
-        credit_history = float(credit_history_value)
+        try:
+            credit_history = float(
+                credit_history_value
+            )
+
+        except (TypeError, ValueError):
+            raise ValueError(
+                "Credit history must be a valid selection."
+            )
 
         if credit_history not in (0.0, 1.0):
             raise ValueError(
                 "Credit history must be either 0 or 1."
             )
 
-        # ---------------------------------
-        # Create model input array
-        # ---------------------------------
+        # ------------------------------------------
+        # Create model input
+        # ------------------------------------------
 
-        features = np.array([[
-            gender,
-            married,
-            dependents,
-            education,
-            self_employed,
-            applicant_income,
-            coapplicant_income,
-            loan_amount,
-            loan_amount_term,
-            credit_history,
-            property_area
-        ]], dtype=float)
+        input_data = pd.DataFrame(
+            [[
+                gender,
+                married,
+                dependents,
+                education,
+                self_employed,
+                applicant_income,
+                coapplicant_income,
+                loan_amount_for_model,
+                loan_amount_term,
+                credit_history,
+                property_area
+            ]],
+            columns=MODEL_FEATURES
+        )
 
-        # ---------------------------------
+        # ------------------------------------------
         # Make prediction
-        # ---------------------------------
+        # ------------------------------------------
 
-        prediction = model.predict(features)
+        prediction = model.predict(input_data)
         prediction_value = int(prediction[0])
+
+        # ------------------------------------------
+        # Calculate model confidence
+        # ------------------------------------------
+
+        confidence_score = None
+
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba(
+                input_data
+            )[0]
+
+            model_classes = list(model.classes_)
+
+            predicted_class_index = (
+                model_classes.index(prediction_value)
+            )
+
+            confidence_score = round(
+                float(
+                    probabilities[
+                        predicted_class_index
+                    ]
+                ) * 100,
+                2
+            )
+
+        # ------------------------------------------
+        # Prepare dynamic explanation
+        # ------------------------------------------
+
+        total_income = (
+            applicant_income + coapplicant_income
+        )
+
+        ai_reasons = []
 
         if prediction_value == 1:
             prediction_text = (
                 "Loan Application Likely to Be Approved"
             )
+
             prediction_status = "approved"
+
+            if (
+                confidence_score is not None
+                and confidence_score >= 80
+            ):
+                risk_level = "Low"
+            else:
+                risk_level = "Medium"
+
+            if credit_history == 1:
+                ai_reasons.append(
+                    "Excellent credit history improves "
+                    "approval chances."
+                )
+
+            if total_income >= 50000:
+                ai_reasons.append(
+                    "Strong combined income supports "
+                    "repayment capacity."
+                )
+
+            elif total_income >= 25000:
+                ai_reasons.append(
+                    "Income profile is adequate for "
+                    "the requested loan."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Income is lower, but the complete "
+                    "profile still matches approval patterns."
+                )
+
+            if loan_amount_rupees <= 300000:
+                ai_reasons.append(
+                    "Requested loan amount is within "
+                    "a comfortable range."
+                )
+
+            elif loan_amount_rupees <= 500000:
+                ai_reasons.append(
+                    "Loan amount is moderate relative "
+                    "to the applicant profile."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Loan amount is comparatively high "
+                    "and may require stronger repayment capacity."
+                )
+
+            if education == 0:
+                ai_reasons.append(
+                    "Graduate education strengthens "
+                    "the applicant profile."
+                )
+
+            if self_employed == 0:
+                ai_reasons.append(
+                    "Salaried or non-self-employed status "
+                    "may improve financial stability."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Self-employment is accepted, but income "
+                    "consistency remains important."
+                )
+
+            if len(ai_reasons) < 4:
+                ai_reasons.append(
+                    "Overall applicant profile matches "
+                    "the model's approval pattern."
+                )
 
         else:
             prediction_text = (
                 "Loan Application May Not Be Approved"
             )
+
             prediction_status = "rejected"
+
+            if (
+                confidence_score is not None
+                and confidence_score >= 80
+            ):
+                risk_level = "High"
+            else:
+                risk_level = "Medium"
+
+            if credit_history == 0:
+                ai_reasons.append(
+                    "Poor or unavailable credit history "
+                    "reduces approval probability."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Credit history is positive, but other "
+                    "financial factors may be limiting approval."
+                )
+
+            if total_income < 25000:
+                ai_reasons.append(
+                    "Combined applicant income is "
+                    "comparatively low."
+                )
+
+            elif total_income < 50000:
+                ai_reasons.append(
+                    "Income may be insufficient for the "
+                    "requested loan amount."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Income is relatively strong, but the "
+                    "overall profile still has risk factors."
+                )
+
+            if loan_amount_rupees > 500000:
+                ai_reasons.append(
+                    "Requested loan amount is comparatively high."
+                )
+
+            elif loan_amount_rupees > 300000:
+                ai_reasons.append(
+                    "Loan amount may be high relative "
+                    "to the applicant profile."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Loan amount is moderate, but other "
+                    "profile factors affect approval."
+                )
+
+            if education == 1:
+                ai_reasons.append(
+                    "Education profile may slightly affect "
+                    "the model's decision."
+                )
+
+            if self_employed == 1:
+                ai_reasons.append(
+                    "Self-employment income may require "
+                    "additional verification."
+                )
+
+            if len(ai_reasons) < 4:
+                ai_reasons.append(
+                    "Overall profile requires improvement "
+                    "for better approval chances."
+                )
+
+        # Limit dashboard reasons to maximum 5
+        ai_reasons = ai_reasons[:5]
+
+        # ------------------------------------------
+        # Render prediction dashboard
+        # ------------------------------------------
 
         return render_template(
             "index.html",
             prediction_text=prediction_text,
-            prediction_status=prediction_status
+            prediction_status=prediction_status,
+            confidence_score=confidence_score,
+            risk_level=risk_level,
+            applicant_income=applicant_income,
+            coapplicant_income=coapplicant_income,
+            total_income=total_income,
+            loan_amount=loan_amount_rupees,
+            loan_term=loan_amount_term,
+            credit_history=credit_history_value,
+            property_area=property_area_value,
+            ai_reasons=ai_reasons
         )
 
     except ValueError as error:
@@ -261,11 +539,15 @@ def predict():
         return render_template(
             "index.html",
             error_message=(
-                "Prediction failed. Please check the entered values "
-                "and try again."
+                "Prediction failed. Please check the entered "
+                "values and try again."
             )
         )
 
+
+# --------------------------------------------------
+# Start Flask application
+# --------------------------------------------------
 
 if __name__ == "__main__":
     app.run(debug=True)

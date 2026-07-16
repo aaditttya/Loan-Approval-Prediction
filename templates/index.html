@@ -40,6 +40,13 @@
 
 <body>
 
+    <!-- Premium Background Shapes -->
+<div class="background-shapes" aria-hidden="true">
+    <span class="shape shape-one"></span>
+    <span class="shape shape-two"></span>
+    <span class="shape shape-three"></span>
+</div>
+
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
@@ -61,9 +68,18 @@
                 <a href="#about">About</a>
             </div>
 
-            <a href="#predict" class="nav-button">
+            <a href="#predict" class="nav-button ripple-button">
                 Check Eligibility
             </a>
+
+            <button
+    type="button"
+    class="theme-toggle"
+    id="themeToggle"
+    aria-label="Switch to dark theme"
+>
+    <i class="fa-solid fa-moon"></i>
+</button>
 
             <button
                 type="button"
@@ -102,7 +118,7 @@
 
                 <div class="hero-buttons">
 
-                    <a href="#predict" class="primary-button">
+                    <a href="#predict" class="primary-button ripple-button">
                         Check Eligibility
                         <i class="fa-solid fa-arrow-right"></i>
                     </a>
@@ -178,8 +194,97 @@
 
         </section>
 
+                <!-- Statistics Section -->
+        <section class="stats-section" id="stats">
+
+            <div class="stats-grid">
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="10000"
+                            data-suffix="+"
+                        >
+                            0
+                        </h3>
+
+                        <p>Predictions Processed</p>
+                    </div>
+
+                </article>
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="95"
+                            data-suffix="%"
+                        >
+                            0
+                        </h3>
+
+                        <p>Model Performance</p>
+                    </div>
+
+                </article>
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="24"
+                            data-suffix="/7"
+                        >
+                            0
+                        </h3>
+
+                        <p>Always Available</p>
+                    </div>
+
+                </article>
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="100"
+                            data-suffix="%"
+                        >
+                            0
+                        </h3>
+
+                        <p>Secure Processing</p>
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
         <!-- Prediction Section -->
-        <section class="prediction-section" id="predict">
+        <section class="prediction-section reveal-section" id="predict">
 
             <div class="section-heading">
 
@@ -605,7 +710,7 @@
                     <!-- Predict Button -->
                     <button
                         type="submit"
-                        class="predict-button"
+                        class="predict-button ripple-button"
                         id="predictButton"
                     >
 
@@ -636,46 +741,190 @@
                 {% endif %}
 
                 <!-- Prediction Result -->
-                {% if prediction_text %}
+              <!-- Prediction Dashboard -->
+{% if prediction_text %}
 
-                <div class="result-card {{ prediction_status }}">
+<section class="ai-dashboard {{ prediction_status }}">
 
-                    <div class="result-icon">
-                        {% if prediction_status == "approved" %}
-                            <i class="fa-solid fa-circle-check"></i>
-                        {% else %}
-                            <i class="fa-solid fa-circle-xmark"></i>
-                        {% endif %}
-                    </div>
+    <div class="dashboard-result-header">
 
-                    <div class="result-content">
-                        <span>Prediction Result</span>
+        <div class="dashboard-result-icon">
+            {% if prediction_status == "approved" %}
+                <i class="fa-solid fa-circle-check"></i>
+            {% else %}
+                <i class="fa-solid fa-circle-xmark"></i>
+            {% endif %}
+        </div>
 
-                        <h3>{{ prediction_text }}</h3>
+        <div class="dashboard-result-content">
+            <span class="dashboard-label">
+                AI Prediction Result
+            </span>
 
-                        {% if prediction_status == "approved" %}
-                            <p>
-                                Your profile matches the model's approval
-                                criteria.
-                            </p>
-                        {% else %}
-                            <p>
-                                Your current profile does not match the model's
-                                approval criteria.
-                            </p>
-                        {% endif %}
-                    </div>
+            <h3>{{ prediction_text }}</h3>
 
+            <p>
+                This result is generated by the trained machine-learning model
+                using the submitted applicant and financial information.
+            </p>
+        </div>
+
+        <!-- Confidence and Risk -->
+        <div class="dashboard-side-panel">
+
+            <div
+    class="confidence-meter"
+    data-confidence="{{ confidence_score if confidence_score is not none else 0 }}"
+>
+    <div class="confidence-ring">
+        <div class="confidence-ring-inner">
+            <span>Confidence</span>
+
+            <strong>
+                {% if confidence_score is not none %}
+                    {{ confidence_score }}%
+                {% else %}
+                    --
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+</div>
+                </strong>
+            </div>
+
+            
+
+        </div>
+
+    </div>
+
+    <div class="dashboard-grid">
+
+        <!-- AI Analysis -->
+        <article class="dashboard-panel analysis-panel">
+
+            <div class="panel-heading">
+                <div class="panel-icon">
+                    <i class="fa-solid fa-brain"></i>
                 </div>
 
-                {% endif %}
+                <div>
+                    <span>Smart Analysis</span>
+                    <h4>AI Recommendation</h4>
+                </div>
+            </div>
+
+            <div class="reason-list">
+
+                {% for reason in ai_reasons %}
+
+                <div class="reason-item">
+                    {% if prediction_status == "approved" %}
+                        <i class="fa-solid fa-circle-check"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    {% endif %}
+
+                    <span>{{ reason }}</span>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </article>
+
+        <!-- Financial Summary -->
+        <article class="dashboard-panel summary-panel">
+
+            <div class="panel-heading">
+                <div class="panel-icon">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+
+                <div>
+                    <span>Application Data</span>
+                    <h4>Financial Summary</h4>
+                </div>
+            </div>
+
+            <div class="summary-grid">
+
+                <div class="summary-item">
+                    <span>Applicant Income</span>
+
+                    <strong>
+                        ₹{{ "{:,.0f}".format(applicant_income) }}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Co-applicant Income</span>
+
+                    <strong>
+                        ₹{{ "{:,.0f}".format(coapplicant_income) }}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Loan Amount</span>
+
+                    <strong>
+                        ₹{{ "{:,.0f}".format(loan_amount) }}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Loan Term</span>
+
+                    <strong>
+                        {{ "{:,.0f}".format(loan_term) }} months
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Credit History</span>
+
+                    <strong>
+                        {% if credit_history == "1" %}
+                            Good
+                        {% else %}
+                            Poor / unavailable
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Property Area</span>
+                    <strong>{{ property_area }}</strong>
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+
+    <div class="dashboard-disclaimer">
+        <i class="fa-solid fa-circle-info"></i>
+
+        <p>
+            This prediction is for educational and decision-support purposes
+            only. It is not a final approval decision from any bank or lender.
+        </p>
+    </div>
+
+</section>
+
+{% endif %}
 
             </div>
 
         </section>
 
         <!-- Features Section -->
-        <section class="features-section" id="features">
+        <section class="features-section reveal-section" id="features"> 
 
             <div class="section-heading">
 
@@ -744,7 +993,7 @@
         </section>
 
         <!-- About Section -->
-        <section class="about-section" id="about">
+        <section class="about-section reveal-section" id="about">
 
             <div class="about-card">
 
@@ -785,7 +1034,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer reveal-section">
 
         <div class="footer-content">
 
