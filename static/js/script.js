@@ -307,4 +307,110 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     }
+        /*
+    ==========================================
+    Phase 4 - History Search, Filter and Sort
+    ==========================================
+    */
+
+    const historySearch =
+        document.getElementById("historySearch");
+
+    const historySort =
+        document.getElementById("historySort");
+
+    const historyRows =
+        Array.from(document.querySelectorAll(".history-row"));
+
+    const filterButtons =
+        document.querySelectorAll(".history-filter-button");
+
+    const visibleRecordCount =
+        document.getElementById("visibleRecordCount");
+
+    let activeHistoryFilter = "all";
+
+    function updateHistoryTable() {
+        const searchValue = historySearch
+            ? historySearch.value.trim().toLowerCase()
+            : "";
+
+        let visibleRows = historyRows.filter(function (row) {
+            const rowText = row.textContent.toLowerCase();
+            const rowStatus = row.dataset.status || "";
+
+            const matchesSearch =
+                rowText.includes(searchValue);
+
+            const matchesFilter =
+                activeHistoryFilter === "all" ||
+                rowStatus === activeHistoryFilter;
+
+            return matchesSearch && matchesFilter;
+        });
+
+        historyRows.forEach(function (row) {
+            row.style.display = "none";
+        });
+
+        if (historySort) {
+            visibleRows.sort(function (rowA, rowB) {
+                const dateA = new Date(rowA.dataset.date);
+                const dateB = new Date(rowB.dataset.date);
+
+                if (historySort.value === "oldest") {
+                    return dateA - dateB;
+                }
+
+                return dateB - dateA;
+            });
+        }
+
+        const tableBody = document.querySelector(
+            ".history-table tbody"
+        );
+
+        visibleRows.forEach(function (row) {
+            row.style.display = "";
+            tableBody.appendChild(row);
+        });
+
+        if (visibleRecordCount) {
+            visibleRecordCount.textContent =
+                visibleRows.length;
+        }
+    }
+
+    if (historySearch) {
+        historySearch.addEventListener(
+            "input",
+            updateHistoryTable
+        );
+    }
+
+    if (historySort) {
+        historySort.addEventListener(
+            "change",
+            updateHistoryTable
+        );
+    }
+
+    filterButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            filterButtons.forEach(function (item) {
+                item.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            activeHistoryFilter =
+                button.dataset.filter || "all";
+
+            updateHistoryTable();
+        });
+    });
+
+    if (historyRows.length > 0) {
+        updateHistoryTable();
+    }
  });

@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 import os
 import pickle
+import sqlite3
 
 import pandas as pd
 
@@ -33,6 +34,57 @@ MODEL_FEATURES = [
     "Credit_History",
     "Property_Area"
 ]
+# --------------------------------------------------
+# SQLite Database Initialization
+# --------------------------------------------------
+
+def initialize_database():
+
+    database_path = os.path.join(BASE_DIR, "predictions.db")
+    connection = sqlite3.connect(database_path)
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            prediction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            gender TEXT,
+
+            married TEXT,
+
+            dependents TEXT,
+
+            education TEXT,
+
+            self_employed TEXT,
+
+            applicant_income REAL,
+
+            coapplicant_income REAL,
+
+            loan_amount REAL,
+
+            loan_term REAL,
+
+            credit_history REAL,
+
+            property_area TEXT,
+
+            prediction TEXT,
+
+            confidence REAL,
+
+            risk_level TEXT
+        )
+    """)
+
+    connection.commit()
+
+    connection.close()
 
 
 # --------------------------------------------------
@@ -497,6 +549,63 @@ def predict():
         ai_reasons = ai_reasons[:5]
 
         # ------------------------------------------
+        # Save prediction into SQLite database
+        # ------------------------------------------
+
+        database_path = os.path.join(
+            BASE_DIR,
+            "predictions.db"
+        )
+
+        connection = sqlite3.connect(database_path)
+
+        try:
+            cursor = connection.cursor()
+
+            cursor.execute(
+                """
+                INSERT INTO predictions (
+                    gender,
+                    married,
+                    dependents,
+                    education,
+                    self_employed,
+                    applicant_income,
+                    coapplicant_income,
+                    loan_amount,
+                    loan_term,
+                    credit_history,
+                    property_area,
+                    prediction,
+                    confidence,
+                    risk_level
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    gender_value,
+                    married_value,
+                    dependents_value,
+                    education_value,
+                    self_employed_value,
+                    applicant_income,
+                    coapplicant_income,
+                    loan_amount_rupees,
+                    loan_amount_term,
+                    credit_history,
+                    property_area_value,
+                    prediction_text,
+                    confidence_score,
+                    risk_level
+                )
+            )
+
+            connection.commit()
+
+        finally:
+            connection.close()
+
+        # ------------------------------------------
         # Render prediction dashboard
         # ------------------------------------------
 
@@ -533,6 +642,17 @@ def predict():
             )
         )
 
+    except sqlite3.Error as error:
+        print(f"Database error: {error}")
+
+        return render_template(
+            "index.html",
+            error_message=(
+                "Prediction was created, but it could not be "
+                "saved in the database."
+            )
+        )
+
     except Exception as error:
         print(f"Prediction error: {error}")
 
@@ -543,11 +663,84 @@ def predict():
                 "values and try again."
             )
         )
-
-
 # --------------------------------------------------
+# Prediction History Route
+# --------------------------------------------------
+
+@app.route("/history")
+def history():
+    database_path = os.path.join(
+        BASE_DIR,
+        "predictions.db"
+    )
+
+    connection = sqlite3.connect(database_path)
+    connection.row_factory = sqlite3.Row
+
+    try:
+        predictions = connection.execute(
+            """
+            SELECT *
+            FROM predictions
+            ORDER BY prediction_date DESC
+            """
+        ).fetchall()
+
+        total_predictions = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            """
+        ).fetchone()[0]
+
+        approved_predictions = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE prediction LIKE '%Approved%'
+            """
+        ).fetchone()[0]
+
+        rejected_predictions = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE prediction LIKE '%Not Be Approved%'
+            """
+        ).fetchone()[0]
+
+        average_confidence = connection.execute(
+            """
+            SELECT AVG(confidence)
+            FROM predictions
+            WHERE confidence IS NOT NULL
+            """
+        ).fetchone()[0]
+
+    finally:
+        connection.close()
+
+    if average_confidence is None:
+        average_confidence = 0
+
+    average_confidence = round(
+        float(average_confidence),
+        2
+    )
+
+    return render_template(
+        "history.html",
+        predictions=predictions,
+        total_predictions=total_predictions,
+        approved_predictions=approved_predictions,
+        rejected_predictions=rejected_predictions,
+        average_confidence=average_confidence
+    )
+
+    # --------------------------------------------------
 # Start Flask application
 # --------------------------------------------------
 
 if __name__ == "__main__":
+    initialize_database()
     app.run(debug=True)
