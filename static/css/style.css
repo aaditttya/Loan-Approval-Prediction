@@ -2658,3 +2658,20 @@ body.dark-theme .history-sort-group select {
     background:#15803d;
     transform:translateY(-2px);
 }
+.logout-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:12px 22px;
+    background:#dc2626;
+    color:#ffffff;
+    text-decoration:none;
+    border-radius:10px;
+    font-weight:600;
+    transition:0.3s;
+}
+
+.logout-btn:hover{
+    background:#b91c1c;
+    transform:translateY(-2px);
+}
