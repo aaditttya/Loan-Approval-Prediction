@@ -60,7 +60,7 @@
                 <div class="history-actions">
 
     <a
-        href="{{ url_for('export_csv') }}"
+        href="{{ url_for('history.export_csv') }}"
         class="export-btn"
     >
         <i class="fa-solid fa-file-csv"></i>
@@ -76,7 +76,7 @@
     </a>
 
     <a
-    href="{{ url_for('logout') }}"
+    href="{{ url_for('auth.logout') }}"
     class="logout-btn"
 >
     <i class="fa-solid fa-right-from-bracket"></i>
@@ -256,7 +256,7 @@
 
                             <tr
     class="history-row"
-    data-status="{% if 'Likely to Be Approved' in row.prediction %}approved{% else %}rejected{% endif %}"
+    data-status="{% if row.prediction == 'Loan Approved' %}approved{% else %}rejected{% endif %}"
     data-date="{{ row.prediction_date }}"
 >
                                 <td>#{{ row.id }}</td>
@@ -264,7 +264,7 @@
                                 <td>{{ row.prediction_date }}</td>
 
                                 <td>
-                                    {% if 'Likely to Be Approved' in row.prediction %}
+                                    {% if row.prediction == "Loan Approved" %}
                                         <span class="status-badge approved">
                                             Approved
                                         </span>
