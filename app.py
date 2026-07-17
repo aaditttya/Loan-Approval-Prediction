@@ -8,6 +8,11 @@ from flask import (
     url_for
 )
 
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+
 import csv
 import io
 import os
@@ -19,14 +24,6 @@ import pandas as pd
 app = Flask(__name__)
 
 app.secret_key = "loanwise-ai-admin-secret-key"
-
-# --------------------------------------------------
-# Admin Login Credentials
-# --------------------------------------------------
-
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "loanwise123"
-
 
 # --------------------------------------------------
 # Load trained machine-learning model
@@ -58,52 +55,75 @@ MODEL_FEATURES = [
 # --------------------------------------------------
 
 def initialize_database():
-
     database_path = os.path.join(BASE_DIR, "predictions.db")
     connection = sqlite3.connect(database_path)
 
-    cursor = connection.cursor()
+    try:
+        cursor = connection.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS predictions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                prediction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                gender TEXT,
+                married TEXT,
+                dependents TEXT,
+                education TEXT,
+                self_employed TEXT,
+                applicant_income REAL,
+                coapplicant_income REAL,
+                loan_amount REAL,
+                loan_term REAL,
+                credit_history REAL,
+                property_area TEXT,
+                prediction TEXT,
+                confidence REAL,
+                risk_level TEXT
+            )
+        """)
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
+            )
+        """)
 
-            prediction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-            gender TEXT,
-
-            married TEXT,
-
-            dependents TEXT,
-
-            education TEXT,
-
-            self_employed TEXT,
-
-            applicant_income REAL,
-
-            coapplicant_income REAL,
-
-            loan_amount REAL,
-
-            loan_term REAL,
-
-            credit_history REAL,
-
-            property_area TEXT,
-
-            prediction TEXT,
-
-            confidence REAL,
-
-            risk_level TEXT
+        cursor.execute(
+            """
+            SELECT id
+            FROM admins
+            WHERE username = ?
+            """,
+            ("admin",)
         )
-    """)
 
-    connection.commit()
+        existing_admin = cursor.fetchone()
 
-    connection.close()
+        if existing_admin is None:
+            hashed_password = generate_password_hash(
+                "loanwise123"
+            )
+
+            cursor.execute(
+                """
+                INSERT INTO admins (
+                    username,
+                    password_hash
+                )
+                VALUES (?, ?)
+                """,
+                (
+                    "admin",
+                    hashed_password
+                )
+            )
+
+        connection.commit()
+
+    finally:
+        connection.close()
 
 
 # --------------------------------------------------
@@ -691,15 +711,51 @@ def predict():
 def login():
     error_message = None
 
+    if session.get("admin_logged_in"):
+        return redirect(url_for("history"))
+
     if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
+        username = request.form.get(
+            "username",
+            ""
+        ).strip()
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        database_path = os.path.join(
+            BASE_DIR,
+            "predictions.db"
+        )
+
+        connection = sqlite3.connect(database_path)
+        connection.row_factory = sqlite3.Row
+
+        try:
+            admin = connection.execute(
+                """
+                SELECT id, username, password_hash
+                FROM admins
+                WHERE username = ?
+                """,
+                (username,)
+            ).fetchone()
+
+        finally:
+            connection.close()
 
         if (
-            username == ADMIN_USERNAME
-            and password == ADMIN_PASSWORD
+            admin is not None
+            and check_password_hash(
+                admin["password_hash"],
+                password
+            )
         ):
+            session.clear()
             session["admin_logged_in"] = True
+            session["admin_username"] = admin["username"]
 
             return redirect(
                 url_for("history")
@@ -711,6 +767,7 @@ def login():
         "login.html",
         error_message=error_message
     )
+
 
 # --------------------------------------------------
 # Admin Logout
@@ -732,7 +789,7 @@ def logout():
 def history():
 
     if not session.get("admin_logged_in"):
-      return redirect(url_for("login"))
+        return redirect(url_for("login"))
 
     database_path = os.path.join(
         BASE_DIR,
@@ -867,6 +924,9 @@ def history():
 
 @app.route("/export-csv")
 def export_csv():
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("login"))
+
     database_path = os.path.join(
         BASE_DIR,
         "predictions.db"
@@ -958,7 +1018,7 @@ def export_csv():
         }
     )
 
-    # --------------------------------------------------
+# --------------------------------------------------
 # Start Flask application
 # --------------------------------------------------
 
