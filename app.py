@@ -2,7 +2,10 @@ from flask import (
     Flask,
     render_template,
     request,
-    Response
+    Response,
+    session,
+    redirect,
+    url_for
 )
 
 import csv
@@ -14,6 +17,15 @@ import sqlite3
 import pandas as pd
 
 app = Flask(__name__)
+
+app.secret_key = "loanwise-ai-admin-secret-key"
+
+# --------------------------------------------------
+# Admin Login Credentials
+# --------------------------------------------------
+
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "loanwise123"
 
 
 # --------------------------------------------------
@@ -670,12 +682,58 @@ def predict():
                 "values and try again."
             )
         )
+    
+# --------------------------------------------------
+# Admin Login
+# --------------------------------------------------
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error_message = None
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        if (
+            username == ADMIN_USERNAME
+            and password == ADMIN_PASSWORD
+        ):
+            session["admin_logged_in"] = True
+
+            return redirect(
+                url_for("history")
+            )
+
+        error_message = "Invalid username or password."
+
+    return render_template(
+        "login.html",
+        error_message=error_message
+    )
+
+# --------------------------------------------------
+# Admin Logout
+# --------------------------------------------------
+
+@app.route("/logout")
+def logout():
+    session.pop("admin_logged_in", None)
+
+    return redirect(
+        url_for("login")
+    )
+
 # --------------------------------------------------
 # Prediction History Route
 # --------------------------------------------------
 
 @app.route("/history")
 def history():
+
+    if not session.get("admin_logged_in"):
+      return redirect(url_for("login"))
+
     database_path = os.path.join(
         BASE_DIR,
         "predictions.db"
