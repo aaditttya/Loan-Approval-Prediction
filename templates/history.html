@@ -33,6 +33,7 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='css/style.css') }}"
     >
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -55,10 +56,25 @@
                     </p>
                 </div>
 
-                <a href="/" class="history-back-button">
-                    <i class="fa-solid fa-arrow-left"></i>
-                    Back to Predictor
-                </a>
+                <div class="history-actions">
+
+    <a
+        href="{{ url_for('export_csv') }}"
+        class="export-btn"
+    >
+        <i class="fa-solid fa-file-csv"></i>
+        Download CSV
+    </a>
+
+    <a
+        href="/"
+        class="history-back-button"
+    >
+        <i class="fa-solid fa-arrow-left"></i>
+        Back to Predictor
+    </a>
+
+</div>
 
             </div>
 
@@ -117,6 +133,25 @@
                 </article>
 
             </div>
+
+            <section class="charts-section">
+
+    <div class="chart-card">
+        <h3>Approved vs Rejected</h3>
+        <canvas id="approvalChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3>Risk Level Distribution</h3>
+        <canvas id="riskChart"></canvas>
+    </div>
+
+    <div class="chart-card full-width">
+        <h3>Daily Predictions</h3>
+        <canvas id="dailyChart"></canvas>
+    </div>
+
+</section>
 
             <div class="history-table-card">
 
@@ -272,6 +307,21 @@
     src="{{ url_for('static', filename='js/script.js') }}"
 ></script>
 
-</body>
+<script id="approval-chart-data" type="application/json">
+    {{ approval_chart_data | tojson }}
+</script>
 
+<script id="risk-chart-data" type="application/json">
+    {{ risk_chart_data | tojson }}
+</script>
+
+
+<script id="daily-chart-data" type="application/json">
+    {{ daily_chart_data | tojson }}
+</script>
+
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
+
+</body>
 </html>

@@ -1,10 +1,17 @@
-from flask import Flask, render_template, request
+from flask import (
+    Flask,
+    render_template,
+    request,
+    Response
+)
+
+import csv
+import io
 import os
 import pickle
 import sqlite3
 
 import pandas as pd
-
 
 app = Flask(__name__)
 
@@ -709,6 +716,41 @@ def history():
             """
         ).fetchone()[0]
 
+        low_risk = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE risk_level = 'Low'
+            """
+        ).fetchone()[0]
+
+        medium_risk = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE risk_level = 'Medium'
+            """
+        ).fetchone()[0]
+
+        high_risk = connection.execute(
+           """
+           SELECT COUNT(*)
+           FROM predictions
+           WHERE risk_level = 'High'
+           """
+        ).fetchone()[0]
+
+        daily_prediction_rows = connection.execute(
+    """
+    SELECT
+        DATE(prediction_date) AS prediction_day,
+        COUNT(*) AS prediction_count
+    FROM predictions
+    GROUP BY DATE(prediction_date)
+    ORDER BY DATE(prediction_date)
+    """
+).fetchall()
+
         average_confidence = connection.execute(
             """
             SELECT AVG(confidence)
@@ -728,13 +770,134 @@ def history():
         2
     )
 
+    approval_chart_data = {
+        "approved": approved_predictions,
+        "rejected": rejected_predictions
+    }
+
+    daily_chart_data = {
+    "labels": [
+        row["prediction_day"]
+        for row in daily_prediction_rows
+    ],
+    "counts": [
+        row["prediction_count"]
+        for row in daily_prediction_rows
+    ]
+}
+
     return render_template(
         "history.html",
         predictions=predictions,
         total_predictions=total_predictions,
         approved_predictions=approved_predictions,
         rejected_predictions=rejected_predictions,
-        average_confidence=average_confidence
+        average_confidence=average_confidence,
+        approval_chart_data=approval_chart_data,
+        risk_chart_data={
+        "low": low_risk,
+        "medium": medium_risk,
+        "high": high_risk
+     },
+     daily_chart_data=daily_chart_data
+
+    )
+
+# --------------------------------------------------
+# Export Prediction History as CSV
+# --------------------------------------------------
+
+@app.route("/export-csv")
+def export_csv():
+    database_path = os.path.join(
+        BASE_DIR,
+        "predictions.db"
+    )
+
+    connection = sqlite3.connect(database_path)
+    connection.row_factory = sqlite3.Row
+
+    try:
+        predictions = connection.execute(
+            """
+            SELECT
+                id,
+                prediction_date,
+                gender,
+                married,
+                dependents,
+                education,
+                self_employed,
+                applicant_income,
+                coapplicant_income,
+                loan_amount,
+                loan_term,
+                credit_history,
+                property_area,
+                prediction,
+                confidence,
+                risk_level
+            FROM predictions
+            ORDER BY prediction_date DESC
+            """
+        ).fetchall()
+
+    finally:
+        connection.close()
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "ID",
+        "Prediction Date",
+        "Gender",
+        "Married",
+        "Dependents",
+        "Education",
+        "Self Employed",
+        "Applicant Income",
+        "Coapplicant Income",
+        "Loan Amount",
+        "Loan Term",
+        "Credit History",
+        "Property Area",
+        "Prediction",
+        "Confidence",
+        "Risk Level"
+    ])
+
+    for row in predictions:
+        writer.writerow([
+            row["id"],
+            row["prediction_date"],
+            row["gender"],
+            row["married"],
+            row["dependents"],
+            row["education"],
+            row["self_employed"],
+            row["applicant_income"],
+            row["coapplicant_income"],
+            row["loan_amount"],
+            row["loan_term"],
+            row["credit_history"],
+            row["property_area"],
+            row["prediction"],
+            row["confidence"],
+            row["risk_level"]
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition":
+                "attachment; filename=loan_prediction_history.csv"
+        }
     )
 
     # --------------------------------------------------
