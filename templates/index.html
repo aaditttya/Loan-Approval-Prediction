@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
 
@@ -39,6 +40,13 @@
 
 <body>
 
+    <!-- Premium Background Shapes -->
+<div class="background-shapes" aria-hidden="true">
+    <span class="shape shape-one"></span>
+    <span class="shape shape-two"></span>
+    <span class="shape shape-three"></span>
+</div>
+
     <!-- Navbar -->
     <nav class="navbar">
         <div class="nav-container">
@@ -60,11 +68,21 @@
                 <a href="#about">About</a>
             </div>
 
-            <a href="#predict" class="nav-button">
+            <a href="#predict" class="nav-button ripple-button">
                 Check Eligibility
             </a>
 
             <button
+    type="button"
+    class="theme-toggle"
+    id="themeToggle"
+    aria-label="Switch to dark theme"
+>
+    <i class="fa-solid fa-moon"></i>
+</button>
+
+            <button
+                type="button"
                 class="menu-button"
                 id="menuButton"
                 aria-label="Open navigation menu"
@@ -99,7 +117,8 @@
                 </p>
 
                 <div class="hero-buttons">
-                    <a href="#predict" class="primary-button">
+
+                    <a href="#predict" class="primary-button ripple-button">
                         Check Eligibility
                         <i class="fa-solid fa-arrow-right"></i>
                     </a>
@@ -107,6 +126,7 @@
                     <a href="#features" class="secondary-button">
                         Learn More
                     </a>
+
                 </div>
 
                 <div class="trust-points">
@@ -174,11 +194,103 @@
 
         </section>
 
+                <!-- Statistics Section -->
+        <section class="stats-section" id="stats">
+
+            <div class="stats-grid">
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-chart-column"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="10000"
+                            data-suffix="+"
+                        >
+                            0
+                        </h3>
+
+                        <p>Predictions Processed</p>
+                    </div>
+
+                </article>
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="95"
+                            data-suffix="%"
+                        >
+                            0
+                        </h3>
+
+                        <p>Model Performance</p>
+                    </div>
+
+                </article>
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="24"
+                            data-suffix="/7"
+                        >
+                            0
+                        </h3>
+
+                        <p>Always Available</p>
+                    </div>
+
+                </article>
+
+                <article class="stat-card reveal-card">
+
+                    <div class="stat-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+
+                    <div class="stat-content">
+                        <h3
+                            class="stat-number"
+                            data-target="100"
+                            data-suffix="%"
+                        >
+                            0
+                        </h3>
+
+                        <p>Secure Processing</p>
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
         <!-- Prediction Section -->
-        <section class="prediction-section" id="predict">
+        <section class="prediction-section reveal-section" id="predict">
 
             <div class="section-heading">
-                <span class="section-label">Eligibility Checker</span>
+
+                <span class="section-label">
+                    Eligibility Checker
+                </span>
 
                 <h2>Enter Your Loan Details</h2>
 
@@ -186,6 +298,7 @@
                     Please provide accurate information for a more reliable
                     prediction.
                 </p>
+
             </div>
 
             <div class="form-card">
@@ -194,23 +307,30 @@
                     action="/predict"
                     method="POST"
                     id="loanForm"
+                    novalidate
                 >
 
                     <!-- Personal Information -->
                     <div class="form-section">
 
                         <div class="form-section-heading">
-                            <div class="section-number">1</div>
+
+                            <div class="section-number">
+                                1
+                            </div>
 
                             <div>
                                 <h3>Personal Information</h3>
                                 <p>Tell us about your basic profile.</p>
                             </div>
+
                         </div>
 
                         <div class="form-grid">
 
+                            <!-- Gender -->
                             <div class="form-group">
+
                                 <label for="gender">
                                     <i class="fa-solid fa-user"></i>
                                     Gender
@@ -224,12 +344,21 @@
                                     <option value="" disabled selected>
                                         Select gender
                                     </option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
+
+                                    <option value="Male">
+                                        Male
+                                    </option>
+
+                                    <option value="Female">
+                                        Female
+                                    </option>
                                 </select>
+
                             </div>
 
+                            <!-- Marital Status -->
                             <div class="form-group">
+
                                 <label for="married">
                                     <i class="fa-solid fa-heart"></i>
                                     Marital Status
@@ -243,12 +372,21 @@
                                     <option value="" disabled selected>
                                         Select marital status
                                     </option>
-                                    <option value="Yes">Married</option>
-                                    <option value="No">Unmarried</option>
+
+                                    <option value="Yes">
+                                        Married
+                                    </option>
+
+                                    <option value="No">
+                                        Unmarried
+                                    </option>
                                 </select>
+
                             </div>
 
+                            <!-- Dependents -->
                             <div class="form-group">
+
                                 <label for="dependents">
                                     <i class="fa-solid fa-users"></i>
                                     Dependents
@@ -262,14 +400,29 @@
                                     <option value="" disabled selected>
                                         Select dependents
                                     </option>
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3+">3 or more</option>
+
+                                    <option value="0">
+                                        0
+                                    </option>
+
+                                    <option value="1">
+                                        1
+                                    </option>
+
+                                    <option value="2">
+                                        2
+                                    </option>
+
+                                    <option value="3+">
+                                        3 or more
+                                    </option>
                                 </select>
+
                             </div>
 
+                            <!-- Education -->
                             <div class="form-group">
+
                                 <label for="education">
                                     <i class="fa-solid fa-graduation-cap"></i>
                                     Education
@@ -283,16 +436,21 @@
                                     <option value="" disabled selected>
                                         Select education
                                     </option>
+
                                     <option value="Graduate">
                                         Graduate
                                     </option>
+
                                     <option value="Not Graduate">
                                         Not Graduate
                                     </option>
                                 </select>
+
                             </div>
 
+                            <!-- Self Employed -->
                             <div class="form-group">
+
                                 <label for="selfEmployed">
                                     <i class="fa-solid fa-briefcase"></i>
                                     Self Employed
@@ -306,12 +464,21 @@
                                     <option value="" disabled selected>
                                         Select employment type
                                     </option>
-                                    <option value="Yes">Yes</option>
-                                    <option value="No">No</option>
+
+                                    <option value="Yes">
+                                        Yes
+                                    </option>
+
+                                    <option value="No">
+                                        No
+                                    </option>
                                 </select>
+
                             </div>
 
+                            <!-- Property Area -->
                             <div class="form-group">
+
                                 <label for="propertyArea">
                                     <i class="fa-solid fa-location-dot"></i>
                                     Property Area
@@ -325,12 +492,20 @@
                                     <option value="" disabled selected>
                                         Select property area
                                     </option>
-                                    <option value="Urban">Urban</option>
+
+                                    <option value="Urban">
+                                        Urban
+                                    </option>
+
                                     <option value="Semiurban">
                                         Semi-Urban
                                     </option>
-                                    <option value="Rural">Rural</option>
+
+                                    <option value="Rural">
+                                        Rural
+                                    </option>
                                 </select>
+
                             </div>
 
                         </div>
@@ -341,43 +516,58 @@
                     <div class="form-section">
 
                         <div class="form-section-heading">
-                            <div class="section-number">2</div>
+
+                            <div class="section-number">
+                                2
+                            </div>
 
                             <div>
                                 <h3>Financial Information</h3>
-                                <p>Enter income and loan-related details.</p>
+                                <p>
+                                    Enter income and loan-related details.
+                                </p>
                             </div>
+
                         </div>
 
                         <div class="form-grid">
 
+                            <!-- Applicant Income -->
                             <div class="form-group">
+
                                 <label for="applicantIncome">
                                     <i class="fa-solid fa-indian-rupee-sign"></i>
                                     Applicant Income
                                 </label>
 
                                 <div class="input-wrapper">
+
                                     <span>₹</span>
 
                                     <input
                                         type="number"
                                         id="applicantIncome"
                                         name="ApplicantIncome"
-                                        min="0"
+                                        min="1"
+                                        step="any"
                                         placeholder="Example: 50000"
                                         required
                                     >
+
                                 </div>
+
                             </div>
 
+                            <!-- Co-applicant Income -->
                             <div class="form-group">
+
                                 <label for="coapplicantIncome">
                                     <i class="fa-solid fa-wallet"></i>
                                     Co-applicant Income
                                 </label>
 
                                 <div class="input-wrapper">
+
                                     <span>₹</span>
 
                                     <input
@@ -385,33 +575,44 @@
                                         id="coapplicantIncome"
                                         name="CoapplicantIncome"
                                         min="0"
+                                        step="any"
                                         placeholder="Example: 20000"
                                         required
                                     >
+
                                 </div>
+
                             </div>
 
+                            <!-- Loan Amount -->
                             <div class="form-group">
+
                                 <label for="loanAmount">
                                     <i class="fa-solid fa-money-bill-wave"></i>
                                     Loan Amount
                                 </label>
 
                                 <div class="input-wrapper">
+
                                     <span>₹</span>
 
                                     <input
                                         type="number"
                                         id="loanAmount"
                                         name="LoanAmount"
-                                        min="1"
+                                        min="1000"
+                                        step="any"
                                         placeholder="Example: 150000"
                                         required
                                     >
+
                                 </div>
+
                             </div>
 
+                            <!-- Loan Term -->
                             <div class="form-group">
+
                                 <label for="loanTerm">
                                     <i class="fa-solid fa-calendar-days"></i>
                                     Loan Term
@@ -425,16 +626,37 @@
                                     <option value="" disabled selected>
                                         Select loan term
                                     </option>
-                                    <option value="60">5 years</option>
-                                    <option value="120">10 years</option>
-                                    <option value="180">15 years</option>
-                                    <option value="240">20 years</option>
-                                    <option value="300">25 years</option>
-                                    <option value="360">30 years</option>
+
+                                    <option value="60">
+                                        5 years
+                                    </option>
+
+                                    <option value="120">
+                                        10 years
+                                    </option>
+
+                                    <option value="180">
+                                        15 years
+                                    </option>
+
+                                    <option value="240">
+                                        20 years
+                                    </option>
+
+                                    <option value="300">
+                                        25 years
+                                    </option>
+
+                                    <option value="360">
+                                        30 years
+                                    </option>
                                 </select>
+
                             </div>
 
+                            <!-- Credit History -->
                             <div class="form-group full-width">
+
                                 <label for="creditHistory">
                                     <i class="fa-solid fa-credit-card"></i>
                                     Credit History
@@ -448,9 +670,11 @@
                                     <option value="" disabled selected>
                                         Select credit history status
                                     </option>
+
                                     <option value="1">
                                         Good credit history
                                     </option>
+
                                     <option value="0">
                                         No or poor credit history
                                     </option>
@@ -460,13 +684,16 @@
                                     Select “Good” when previous loans and EMIs
                                     were paid on time.
                                 </small>
+
                             </div>
 
                         </div>
 
                     </div>
 
+                    <!-- Consent -->
                     <div class="form-consent">
+
                         <input
                             type="checkbox"
                             id="consent"
@@ -477,13 +704,16 @@
                         <label for="consent">
                             I confirm that the provided information is accurate.
                         </label>
+
                     </div>
 
+                    <!-- Predict Button -->
                     <button
                         type="submit"
-                        class="predict-button"
+                        class="predict-button ripple-button"
                         id="predictButton"
                     >
+
                         <span class="button-text">
                             Predict Loan Eligibility
                         </span>
@@ -491,48 +721,216 @@
                         <span class="button-loader"></span>
 
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
+
                     </button>
 
-                </form>
+                    </form>
 
-                <!-- Prediction Result -->
-                {% if prediction_text %}
+                <!-- Backend Validation Error -->
+                {% if error_message %}
 
-                <div
-                    class="result-card
-                    {% if 'approved' in prediction_text|lower %}
-                        approved
-                    {% else %}
-                        rejected
-                    {% endif %}"
-                >
-
-                    <div class="result-icon">
-                        {% if 'approved' in prediction_text|lower %}
-                            <i class="fa-solid fa-circle-check"></i>
-                        {% else %}
-                            <i class="fa-solid fa-circle-xmark"></i>
-                        {% endif %}
-                    </div>
+                <div class="server-error-card">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
 
                     <div>
-                        <span>Prediction Result</span>
-                        <h3>{{ prediction_text }}</h3>
+                        <span>Validation Error</span>
+                        <p>{{ error_message }}</p>
                     </div>
-
                 </div>
 
                 {% endif %}
+
+                <!-- Prediction Result -->
+              <!-- Prediction Dashboard -->
+{% if prediction_text %}
+
+<section class="ai-dashboard {{ prediction_status }}">
+
+    <div class="dashboard-result-header">
+
+        <div class="dashboard-result-icon">
+            {% if prediction_status == "approved" %}
+                <i class="fa-solid fa-circle-check"></i>
+            {% else %}
+                <i class="fa-solid fa-circle-xmark"></i>
+            {% endif %}
+        </div>
+
+        <div class="dashboard-result-content">
+            <span class="dashboard-label">
+                AI Prediction Result
+            </span>
+
+            <h3>{{ prediction_text }}</h3>
+
+            <p>
+                This result is generated by the trained machine-learning model
+                using the submitted applicant and financial information.
+            </p>
+        </div>
+
+        <!-- Confidence and Risk -->
+        <div class="dashboard-side-panel">
+
+            <div
+    class="confidence-meter"
+    data-confidence="{{ confidence_score if confidence_score is not none else 0 }}"
+>
+    <div class="confidence-ring">
+        <div class="confidence-ring-inner">
+            <span>Confidence</span>
+
+            <strong>
+                {% if confidence_score is not none %}
+                    {{ confidence_score }}%
+                {% else %}
+                    --
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+</div>
+                </strong>
+            </div>
+
+            
+
+        </div>
+
+    </div>
+
+    <div class="dashboard-grid">
+
+        <!-- AI Analysis -->
+        <article class="dashboard-panel analysis-panel">
+
+            <div class="panel-heading">
+                <div class="panel-icon">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+
+                <div>
+                    <span>Smart Analysis</span>
+                    <h4>AI Recommendation</h4>
+                </div>
+            </div>
+
+            <div class="reason-list">
+
+                {% for reason in ai_reasons %}
+
+                <div class="reason-item">
+                    {% if prediction_status == "approved" %}
+                        <i class="fa-solid fa-circle-check"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                    {% endif %}
+
+                    <span>{{ reason }}</span>
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+        </article>
+
+        <!-- Financial Summary -->
+        <article class="dashboard-panel summary-panel">
+
+            <div class="panel-heading">
+                <div class="panel-icon">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+
+                <div>
+                    <span>Application Data</span>
+                    <h4>Financial Summary</h4>
+                </div>
+            </div>
+
+            <div class="summary-grid">
+
+                <div class="summary-item">
+                    <span>Applicant Income</span>
+
+                    <strong>
+                        ₹{{ "{:,.0f}".format(applicant_income) }}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Co-applicant Income</span>
+
+                    <strong>
+                        ₹{{ "{:,.0f}".format(coapplicant_income) }}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Loan Amount</span>
+
+                    <strong>
+                        ₹{{ "{:,.0f}".format(loan_amount) }}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Loan Term</span>
+
+                    <strong>
+                        {{ "{:,.0f}".format(loan_term) }} months
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Credit History</span>
+
+                    <strong>
+                        {% if credit_history == "1" %}
+                            Good
+                        {% else %}
+                            Poor / unavailable
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="summary-item">
+                    <span>Property Area</span>
+                    <strong>{{ property_area }}</strong>
+                </div>
+
+            </div>
+
+        </article>
+
+    </div>
+
+    <div class="dashboard-disclaimer">
+        <i class="fa-solid fa-circle-info"></i>
+
+        <p>
+            This prediction is for educational and decision-support purposes
+            only. It is not a final approval decision from any bank or lender.
+        </p>
+    </div>
+
+</section>
+
+{% endif %}
 
             </div>
 
         </section>
 
         <!-- Features Section -->
-        <section class="features-section" id="features">
+        <section class="features-section reveal-section" id="features"> 
 
             <div class="section-heading">
-                <span class="section-label">Why LoanWise AI?</span>
+
+                <span class="section-label">
+                    Why LoanWise AI?
+                </span>
 
                 <h2>Smart, Fast and Reliable</h2>
 
@@ -540,11 +938,13 @@
                     A modern prediction experience built using machine
                     learning and secure web technologies.
                 </p>
+
             </div>
 
             <div class="features-grid">
 
                 <article class="feature-card">
+
                     <div class="feature-icon">
                         <i class="fa-solid fa-brain"></i>
                     </div>
@@ -555,9 +955,11 @@
                         Uses a trained ML model to analyze multiple applicant
                         and financial factors.
                     </p>
+
                 </article>
 
                 <article class="feature-card">
+
                     <div class="feature-icon">
                         <i class="fa-solid fa-gauge-high"></i>
                     </div>
@@ -568,9 +970,11 @@
                         Receive your eligibility prediction immediately after
                         submitting the application details.
                     </p>
+
                 </article>
 
                 <article class="feature-card">
+
                     <div class="feature-icon">
                         <i class="fa-solid fa-user-shield"></i>
                     </div>
@@ -581,6 +985,7 @@
                         The interface is designed to collect only the details
                         required for prediction.
                     </p>
+
                 </article>
 
             </div>
@@ -588,14 +993,19 @@
         </section>
 
         <!-- About Section -->
-        <section class="about-section" id="about">
+        <section class="about-section reveal-section" id="about">
 
             <div class="about-card">
 
                 <div>
-                    <span class="section-label">About the Project</span>
 
-                    <h2>Loan Approval Prediction System</h2>
+                    <span class="section-label">
+                        About the Project
+                    </span>
+
+                    <h2>
+                        Loan Approval Prediction System
+                    </h2>
 
                     <p>
                         This academic machine-learning project predicts the
@@ -603,15 +1013,18 @@
                         loan amount, credit history, education, employment and
                         property information.
                     </p>
+
                 </div>
 
                 <div class="technology-list">
+
                     <span>Python</span>
                     <span>Flask</span>
                     <span>Scikit-learn</span>
                     <span>HTML</span>
                     <span>CSS</span>
                     <span>JavaScript</span>
+
                 </div>
 
             </div>
@@ -621,34 +1034,43 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer reveal-section">
 
         <div class="footer-content">
 
             <div>
+
                 <a href="/" class="logo footer-logo">
+
                     <span class="logo-icon">
                         <i class="fa-solid fa-building-columns"></i>
                     </span>
 
-                    <span>LoanWise AI</span>
+                    <span>
+                        LoanWise AI
+                    </span>
+
                 </a>
 
                 <p>
                     An AI-powered loan approval prediction project.
                 </p>
+
             </div>
 
             <div class="footer-links">
+
                 <a href="#home">Home</a>
                 <a href="#predict">Predict</a>
                 <a href="#features">Features</a>
                 <a href="#about">About</a>
+
             </div>
 
         </div>
 
         <div class="footer-bottom">
+
             <p>
                 © <span id="currentYear"></span> LoanWise AI.
                 Built by Aditya Gupta.
@@ -658,12 +1080,20 @@
                 This prediction is for educational purposes and is not a final
                 banking decision.
             </p>
+
         </div>
 
     </footer>
 
     <!-- JavaScript -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script
+        src="{{ url_for('static', filename='js/script.js') }}"
+    ></script>
+
+    <script
+        src="{{ url_for('static', filename='js/validation.js') }}"
+    ></script>
 
 </body>
+
 </html>

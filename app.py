@@ -1,56 +1,212 @@
-from flask import Flask, render_template, request
-import pickle
-import numpy as np
+from flask import (
+    Flask,
+    render_template,
+    request,
+    Response
+)
+
+import csv
+import io
 import os
+import pickle
+import sqlite3
+
+import pandas as pd
 
 app = Flask(__name__)
 
-# Get the directory where app.py is located
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Create complete path of the trained model
+# --------------------------------------------------
+# Load trained machine-learning model
+# --------------------------------------------------
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "loan_model.pkl")
 
-# Load trained machine-learning model
 with open(MODEL_PATH, "rb") as model_file:
     model = pickle.load(model_file)
 
+
+# Model input columns in exact training order
+MODEL_FEATURES = [
+    "Gender",
+    "Married",
+    "Dependents",
+    "Education",
+    "Self_Employed",
+    "ApplicantIncome",
+    "CoapplicantIncome",
+    "LoanAmount",
+    "Loan_Amount_Term",
+    "Credit_History",
+    "Property_Area"
+]
+# --------------------------------------------------
+# SQLite Database Initialization
+# --------------------------------------------------
+
+def initialize_database():
+
+    database_path = os.path.join(BASE_DIR, "predictions.db")
+    connection = sqlite3.connect(database_path)
+
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            prediction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            gender TEXT,
+
+            married TEXT,
+
+            dependents TEXT,
+
+            education TEXT,
+
+            self_employed TEXT,
+
+            applicant_income REAL,
+
+            coapplicant_income REAL,
+
+            loan_amount REAL,
+
+            loan_term REAL,
+
+            credit_history REAL,
+
+            property_area TEXT,
+
+            prediction TEXT,
+
+            confidence REAL,
+
+            risk_level TEXT
+        )
+    """)
+
+    connection.commit()
+
+    connection.close()
+
+
+# --------------------------------------------------
+# Numeric validation helper
+# --------------------------------------------------
+
+def parse_positive_number(value, field_name, allow_zero=False):
+    """
+    Convert a form value into float and validate it.
+
+    allow_zero=False:
+        Number must be greater than zero.
+
+    allow_zero=True:
+        Number may be zero but cannot be negative.
+    """
+
+    try:
+        number = float(value)
+
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"{field_name} must be a valid number."
+        )
+
+    if allow_zero:
+        if number < 0:
+            raise ValueError(
+                f"{field_name} cannot be negative."
+            )
+
+    else:
+        if number <= 0:
+            raise ValueError(
+                f"{field_name} must be greater than zero."
+            )
+
+    return number
+
+
+# --------------------------------------------------
+# Home route
+# --------------------------------------------------
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
 
+# --------------------------------------------------
+# Prediction route
+# --------------------------------------------------
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Get text values from HTML form
+        # ------------------------------------------
+        # Read form values
+        # ------------------------------------------
+
         gender_value = request.form.get("Gender")
         married_value = request.form.get("Married")
         dependents_value = request.form.get("Dependents")
         education_value = request.form.get("Education")
         self_employed_value = request.form.get("Self_Employed")
-        property_area_value = request.form.get("Property_Area")
 
-        # Check whether all required fields were received
+        applicant_income_value = request.form.get(
+            "ApplicantIncome"
+        )
+
+        coapplicant_income_value = request.form.get(
+            "CoapplicantIncome"
+        )
+
+        loan_amount_value = request.form.get(
+            "LoanAmount"
+        )
+
+        loan_term_value = request.form.get(
+            "Loan_Amount_Term"
+        )
+
+        credit_history_value = request.form.get(
+            "Credit_History"
+        )
+
+        property_area_value = request.form.get(
+            "Property_Area"
+        )
+
+        consent_value = request.form.get("consent")
+
+        # ------------------------------------------
+        # Required-field validation
+        # ------------------------------------------
+
         required_fields = {
             "Gender": gender_value,
-            "Married": married_value,
+            "Marital status": married_value,
             "Dependents": dependents_value,
             "Education": education_value,
-            "Self Employed": self_employed_value,
-            "Property Area": property_area_value,
-            "Applicant Income": request.form.get("ApplicantIncome"),
-            "Co-applicant Income": request.form.get("CoapplicantIncome"),
-            "Loan Amount": request.form.get("LoanAmount"),
-            "Loan Term": request.form.get("Loan_Amount_Term"),
-            "Credit History": request.form.get("Credit_History")
+            "Employment type": self_employed_value,
+            "Applicant income": applicant_income_value,
+            "Co-applicant income": coapplicant_income_value,
+            "Loan amount": loan_amount_value,
+            "Loan term": loan_term_value,
+            "Credit history": credit_history_value,
+            "Property area": property_area_value
         }
 
         missing_fields = [
             field_name
             for field_name, field_value in required_fields.items()
-            if field_value is None or field_value == ""
+            if field_value is None
+            or str(field_value).strip() == ""
         ]
 
         if missing_fields:
@@ -59,7 +215,17 @@ def predict():
                 + ", ".join(missing_fields)
             )
 
-        # Convert categorical text values into numbers
+        if consent_value != "on":
+            raise ValueError(
+                "Please confirm that the provided information "
+                "is accurate."
+            )
+
+        # ------------------------------------------
+        # Categorical mappings
+        # Must match training-time encoding
+        # ------------------------------------------
+
         gender_mapping = {
             "Female": 0,
             "Male": 1
@@ -70,9 +236,16 @@ def predict():
             "Yes": 1
         }
 
+        dependents_mapping = {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3+": 3
+        }
+
         education_mapping = {
-            "Not Graduate": 0,
-            "Graduate": 1
+            "Graduate": 0,
+            "Not Graduate": 1
         }
 
         self_employed_mapping = {
@@ -86,79 +259,405 @@ def predict():
             "Urban": 2
         }
 
-        dependents_mapping = {
-            "0": 0,
-            "1": 1,
-            "2": 2,
-            "3+": 3
-        }
+        # ------------------------------------------
+        # Convert categorical values
+        # ------------------------------------------
 
         gender = gender_mapping[gender_value]
         married = married_mapping[married_value]
         dependents = dependents_mapping[dependents_value]
         education = education_mapping[education_value]
-        self_employed = self_employed_mapping[self_employed_value]
-        property_area = property_area_mapping[property_area_value]
 
-        # Convert numerical form values
-        applicant_income = float(
-            request.form.get("ApplicantIncome")
+        self_employed = self_employed_mapping[
+            self_employed_value
+        ]
+
+        property_area = property_area_mapping[
+            property_area_value
+        ]
+
+        # ------------------------------------------
+        # Validate numerical values
+        # ------------------------------------------
+
+        applicant_income = parse_positive_number(
+            applicant_income_value,
+            "Applicant income"
         )
 
-        coapplicant_income = float(
-            request.form.get("CoapplicantIncome")
+        coapplicant_income = parse_positive_number(
+            coapplicant_income_value,
+            "Co-applicant income",
+            allow_zero=True
         )
 
-        loan_amount = float(
-            request.form.get("LoanAmount")
+        loan_amount_rupees = parse_positive_number(
+            loan_amount_value,
+            "Loan amount"
         )
 
-        loan_amount_term = float(
-            request.form.get("Loan_Amount_Term")
+        if loan_amount_rupees < 1000:
+            raise ValueError(
+                "Loan amount must be at least ₹1,000."
+            )
+
+        # Dataset stores LoanAmount in ₹1,000 units.
+        # Example: ₹150,000 becomes 150 for model input.
+        loan_amount_for_model = (
+            loan_amount_rupees / 1000
         )
 
-        credit_history = float(
-            request.form.get("Credit_History")
+        loan_amount_term = parse_positive_number(
+            loan_term_value,
+            "Loan term"
         )
 
-        # Create input array in the same feature order used during training
-        features = np.array([[
-            gender,
-            married,
-            dependents,
-            education,
-            self_employed,
-            applicant_income,
-            coapplicant_income,
-            loan_amount,
-            loan_amount_term,
-            credit_history,
-            property_area
-        ]], dtype=float)
+        try:
+            credit_history = float(
+                credit_history_value
+            )
 
+        except (TypeError, ValueError):
+            raise ValueError(
+                "Credit history must be a valid selection."
+            )
+
+        if credit_history not in (0.0, 1.0):
+            raise ValueError(
+                "Credit history must be either 0 or 1."
+            )
+
+        # ------------------------------------------
+        # Create model input
+        # ------------------------------------------
+
+        input_data = pd.DataFrame(
+            [[
+                gender,
+                married,
+                dependents,
+                education,
+                self_employed,
+                applicant_income,
+                coapplicant_income,
+                loan_amount_for_model,
+                loan_amount_term,
+                credit_history,
+                property_area
+            ]],
+            columns=MODEL_FEATURES
+        )
+
+        # ------------------------------------------
         # Make prediction
-        prediction = model.predict(features)
+        # ------------------------------------------
 
-        if int(prediction[0]) == 1:
-            result = "Loan Approved ✅"
+        prediction = model.predict(input_data)
+        prediction_value = int(prediction[0])
+
+        # ------------------------------------------
+        # Calculate model confidence
+        # ------------------------------------------
+
+        confidence_score = None
+
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba(
+                input_data
+            )[0]
+
+            model_classes = list(model.classes_)
+
+            predicted_class_index = (
+                model_classes.index(prediction_value)
+            )
+
+            confidence_score = round(
+                float(
+                    probabilities[
+                        predicted_class_index
+                    ]
+                ) * 100,
+                2
+            )
+
+        # ------------------------------------------
+        # Prepare dynamic explanation
+        # ------------------------------------------
+
+        total_income = (
+            applicant_income + coapplicant_income
+        )
+
+        ai_reasons = []
+
+        if prediction_value == 1:
+            prediction_text = (
+                "Loan Application Likely to Be Approved"
+            )
+
+            prediction_status = "approved"
+
+            if (
+                confidence_score is not None
+                and confidence_score >= 80
+            ):
+                risk_level = "Low"
+            else:
+                risk_level = "Medium"
+
+            if credit_history == 1:
+                ai_reasons.append(
+                    "Excellent credit history improves "
+                    "approval chances."
+                )
+
+            if total_income >= 50000:
+                ai_reasons.append(
+                    "Strong combined income supports "
+                    "repayment capacity."
+                )
+
+            elif total_income >= 25000:
+                ai_reasons.append(
+                    "Income profile is adequate for "
+                    "the requested loan."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Income is lower, but the complete "
+                    "profile still matches approval patterns."
+                )
+
+            if loan_amount_rupees <= 300000:
+                ai_reasons.append(
+                    "Requested loan amount is within "
+                    "a comfortable range."
+                )
+
+            elif loan_amount_rupees <= 500000:
+                ai_reasons.append(
+                    "Loan amount is moderate relative "
+                    "to the applicant profile."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Loan amount is comparatively high "
+                    "and may require stronger repayment capacity."
+                )
+
+            if education == 0:
+                ai_reasons.append(
+                    "Graduate education strengthens "
+                    "the applicant profile."
+                )
+
+            if self_employed == 0:
+                ai_reasons.append(
+                    "Salaried or non-self-employed status "
+                    "may improve financial stability."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Self-employment is accepted, but income "
+                    "consistency remains important."
+                )
+
+            if len(ai_reasons) < 4:
+                ai_reasons.append(
+                    "Overall applicant profile matches "
+                    "the model's approval pattern."
+                )
+
         else:
-            result = "Loan Rejected ❌"
+            prediction_text = (
+                "Loan Application May Not Be Approved"
+            )
+
+            prediction_status = "rejected"
+
+            if (
+                confidence_score is not None
+                and confidence_score >= 80
+            ):
+                risk_level = "High"
+            else:
+                risk_level = "Medium"
+
+            if credit_history == 0:
+                ai_reasons.append(
+                    "Poor or unavailable credit history "
+                    "reduces approval probability."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Credit history is positive, but other "
+                    "financial factors may be limiting approval."
+                )
+
+            if total_income < 25000:
+                ai_reasons.append(
+                    "Combined applicant income is "
+                    "comparatively low."
+                )
+
+            elif total_income < 50000:
+                ai_reasons.append(
+                    "Income may be insufficient for the "
+                    "requested loan amount."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Income is relatively strong, but the "
+                    "overall profile still has risk factors."
+                )
+
+            if loan_amount_rupees > 500000:
+                ai_reasons.append(
+                    "Requested loan amount is comparatively high."
+                )
+
+            elif loan_amount_rupees > 300000:
+                ai_reasons.append(
+                    "Loan amount may be high relative "
+                    "to the applicant profile."
+                )
+
+            else:
+                ai_reasons.append(
+                    "Loan amount is moderate, but other "
+                    "profile factors affect approval."
+                )
+
+            if education == 1:
+                ai_reasons.append(
+                    "Education profile may slightly affect "
+                    "the model's decision."
+                )
+
+            if self_employed == 1:
+                ai_reasons.append(
+                    "Self-employment income may require "
+                    "additional verification."
+                )
+
+            if len(ai_reasons) < 4:
+                ai_reasons.append(
+                    "Overall profile requires improvement "
+                    "for better approval chances."
+                )
+
+        # Limit dashboard reasons to maximum 5
+        ai_reasons = ai_reasons[:5]
+
+        # ------------------------------------------
+        # Save prediction into SQLite database
+        # ------------------------------------------
+
+        database_path = os.path.join(
+            BASE_DIR,
+            "predictions.db"
+        )
+
+        connection = sqlite3.connect(database_path)
+
+        try:
+            cursor = connection.cursor()
+
+            cursor.execute(
+                """
+                INSERT INTO predictions (
+                    gender,
+                    married,
+                    dependents,
+                    education,
+                    self_employed,
+                    applicant_income,
+                    coapplicant_income,
+                    loan_amount,
+                    loan_term,
+                    credit_history,
+                    property_area,
+                    prediction,
+                    confidence,
+                    risk_level
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    gender_value,
+                    married_value,
+                    dependents_value,
+                    education_value,
+                    self_employed_value,
+                    applicant_income,
+                    coapplicant_income,
+                    loan_amount_rupees,
+                    loan_amount_term,
+                    credit_history,
+                    property_area_value,
+                    prediction_text,
+                    confidence_score,
+                    risk_level
+                )
+            )
+
+            connection.commit()
+
+        finally:
+            connection.close()
+
+        # ------------------------------------------
+        # Render prediction dashboard
+        # ------------------------------------------
 
         return render_template(
             "index.html",
-            prediction_text=result
+            prediction_text=prediction_text,
+            prediction_status=prediction_status,
+            confidence_score=confidence_score,
+            risk_level=risk_level,
+            applicant_income=applicant_income,
+            coapplicant_income=coapplicant_income,
+            total_income=total_income,
+            loan_amount=loan_amount_rupees,
+            loan_term=loan_amount_term,
+            credit_history=credit_history_value,
+            property_area=property_area_value,
+            ai_reasons=ai_reasons
         )
 
     except ValueError as error:
         return render_template(
             "index.html",
-            prediction_text=f"Input Error: {error}"
+            error_message=str(error)
         )
 
     except KeyError as error:
+        print(f"Invalid mapping value: {error}")
+
         return render_template(
             "index.html",
-            prediction_text=f"Invalid selected value: {error}"
+            error_message=(
+                "One of the selected values is invalid. "
+                "Please refresh the page and try again."
+            )
+        )
+
+    except sqlite3.Error as error:
+        print(f"Database error: {error}")
+
+        return render_template(
+            "index.html",
+            error_message=(
+                "Prediction was created, but it could not be "
+                "saved in the database."
+            )
         )
 
     except Exception as error:
@@ -166,9 +665,245 @@ def predict():
 
         return render_template(
             "index.html",
-            prediction_text="Prediction failed. Please check the entered values."
+            error_message=(
+                "Prediction failed. Please check the entered "
+                "values and try again."
+            )
         )
+# --------------------------------------------------
+# Prediction History Route
+# --------------------------------------------------
 
+@app.route("/history")
+def history():
+    database_path = os.path.join(
+        BASE_DIR,
+        "predictions.db"
+    )
+
+    connection = sqlite3.connect(database_path)
+    connection.row_factory = sqlite3.Row
+
+    try:
+        predictions = connection.execute(
+            """
+            SELECT *
+            FROM predictions
+            ORDER BY prediction_date DESC
+            """
+        ).fetchall()
+
+        total_predictions = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            """
+        ).fetchone()[0]
+
+        approved_predictions = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE prediction LIKE '%Approved%'
+            """
+        ).fetchone()[0]
+
+        rejected_predictions = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE prediction LIKE '%Not Be Approved%'
+            """
+        ).fetchone()[0]
+
+        low_risk = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE risk_level = 'Low'
+            """
+        ).fetchone()[0]
+
+        medium_risk = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM predictions
+            WHERE risk_level = 'Medium'
+            """
+        ).fetchone()[0]
+
+        high_risk = connection.execute(
+           """
+           SELECT COUNT(*)
+           FROM predictions
+           WHERE risk_level = 'High'
+           """
+        ).fetchone()[0]
+
+        daily_prediction_rows = connection.execute(
+    """
+    SELECT
+        DATE(prediction_date) AS prediction_day,
+        COUNT(*) AS prediction_count
+    FROM predictions
+    GROUP BY DATE(prediction_date)
+    ORDER BY DATE(prediction_date)
+    """
+).fetchall()
+
+        average_confidence = connection.execute(
+            """
+            SELECT AVG(confidence)
+            FROM predictions
+            WHERE confidence IS NOT NULL
+            """
+        ).fetchone()[0]
+
+    finally:
+        connection.close()
+
+    if average_confidence is None:
+        average_confidence = 0
+
+    average_confidence = round(
+        float(average_confidence),
+        2
+    )
+
+    approval_chart_data = {
+        "approved": approved_predictions,
+        "rejected": rejected_predictions
+    }
+
+    daily_chart_data = {
+    "labels": [
+        row["prediction_day"]
+        for row in daily_prediction_rows
+    ],
+    "counts": [
+        row["prediction_count"]
+        for row in daily_prediction_rows
+    ]
+}
+
+    return render_template(
+        "history.html",
+        predictions=predictions,
+        total_predictions=total_predictions,
+        approved_predictions=approved_predictions,
+        rejected_predictions=rejected_predictions,
+        average_confidence=average_confidence,
+        approval_chart_data=approval_chart_data,
+        risk_chart_data={
+        "low": low_risk,
+        "medium": medium_risk,
+        "high": high_risk
+     },
+     daily_chart_data=daily_chart_data
+
+    )
+
+# --------------------------------------------------
+# Export Prediction History as CSV
+# --------------------------------------------------
+
+@app.route("/export-csv")
+def export_csv():
+    database_path = os.path.join(
+        BASE_DIR,
+        "predictions.db"
+    )
+
+    connection = sqlite3.connect(database_path)
+    connection.row_factory = sqlite3.Row
+
+    try:
+        predictions = connection.execute(
+            """
+            SELECT
+                id,
+                prediction_date,
+                gender,
+                married,
+                dependents,
+                education,
+                self_employed,
+                applicant_income,
+                coapplicant_income,
+                loan_amount,
+                loan_term,
+                credit_history,
+                property_area,
+                prediction,
+                confidence,
+                risk_level
+            FROM predictions
+            ORDER BY prediction_date DESC
+            """
+        ).fetchall()
+
+    finally:
+        connection.close()
+
+    output = io.StringIO()
+
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "ID",
+        "Prediction Date",
+        "Gender",
+        "Married",
+        "Dependents",
+        "Education",
+        "Self Employed",
+        "Applicant Income",
+        "Coapplicant Income",
+        "Loan Amount",
+        "Loan Term",
+        "Credit History",
+        "Property Area",
+        "Prediction",
+        "Confidence",
+        "Risk Level"
+    ])
+
+    for row in predictions:
+        writer.writerow([
+            row["id"],
+            row["prediction_date"],
+            row["gender"],
+            row["married"],
+            row["dependents"],
+            row["education"],
+            row["self_employed"],
+            row["applicant_income"],
+            row["coapplicant_income"],
+            row["loan_amount"],
+            row["loan_term"],
+            row["credit_history"],
+            row["property_area"],
+            row["prediction"],
+            row["confidence"],
+            row["risk_level"]
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={
+            "Content-Disposition":
+                "attachment; filename=loan_prediction_history.csv"
+        }
+    )
+
+    # --------------------------------------------------
+# Start Flask application
+# --------------------------------------------------
 
 if __name__ == "__main__":
+    initialize_database()
     app.run(debug=True)

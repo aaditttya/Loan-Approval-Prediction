@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Prediction History | LoanWise AI</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <main class="history-page">
+
+        <section class="history-container">
+
+            <div class="history-header">
+
+                <div>
+                    <span class="section-label">
+                        Analytics Dashboard
+                    </span>
+
+                    <h1>Prediction History</h1>
+
+                    <p>
+                        Review all saved loan predictions and model insights.
+                    </p>
+                </div>
+
+                <div class="history-actions">
+
+    <a
+        href="{{ url_for('export_csv') }}"
+        class="export-btn"
+    >
+        <i class="fa-solid fa-file-csv"></i>
+        Download CSV
+    </a>
+
+    <a
+        href="/"
+        class="history-back-button"
+    >
+        <i class="fa-solid fa-arrow-left"></i>
+        Back to Predictor
+    </a>
+
+</div>
+
+            </div>
+
+            <div class="history-stats-grid">
+
+                <article class="history-stat-card">
+
+                    <div class="history-stat-icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+
+                    <div>
+                        <span>Total Predictions</span>
+                        <strong>{{ total_predictions }}</strong>
+                    </div>
+
+                </article>
+
+                <article class="history-stat-card approved-card">
+
+                    <div class="history-stat-icon">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+
+                    <div>
+                        <span>Approved</span>
+                        <strong>{{ approved_predictions }}</strong>
+                    </div>
+
+                </article>
+
+                <article class="history-stat-card rejected-card">
+
+                    <div class="history-stat-icon">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </div>
+
+                    <div>
+                        <span>Rejected</span>
+                        <strong>{{ rejected_predictions }}</strong>
+                    </div>
+
+                </article>
+
+                <article class="history-stat-card">
+
+                    <div class="history-stat-icon">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+
+                    <div>
+                        <span>Average Confidence</span>
+                        <strong>{{ average_confidence }}%</strong>
+                    </div>
+
+                </article>
+
+            </div>
+
+            <section class="charts-section">
+
+    <div class="chart-card">
+        <h3>Approved vs Rejected</h3>
+        <canvas id="approvalChart"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3>Risk Level Distribution</h3>
+        <canvas id="riskChart"></canvas>
+    </div>
+
+    <div class="chart-card full-width">
+        <h3>Daily Predictions</h3>
+        <canvas id="dailyChart"></canvas>
+    </div>
+
+</section>
+
+            <div class="history-table-card">
+
+                <div class="history-table-header">
+                    <div>
+                        <span class="section-label">
+                            Stored Records
+                        </span>
+
+                        <h2>Recent Predictions</h2>
+                    </div>
+                </div>
+            
+            <div class="history-controls">
+
+    <div class="history-search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <input
+            type="search"
+            id="historySearch"
+            placeholder="Search prediction, risk or date..."
+            aria-label="Search prediction history"
+        >
+    </div>
+
+    <div class="history-filter-group">
+
+        <button
+            type="button"
+            class="history-filter-button active"
+            data-filter="all"
+        >
+            All
+        </button>
+
+        <button
+            type="button"
+            class="history-filter-button"
+            data-filter="approved"
+        >
+            Approved
+        </button>
+
+        <button
+            type="button"
+            class="history-filter-button"
+            data-filter="rejected"
+        >
+            Rejected
+        </button>
+
+    </div>
+
+    <div class="history-sort-group">
+
+        <label for="historySort">Sort</label>
+
+        <select id="historySort">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+        </select>
+
+    </div>
+
+</div>
+
+<div class="history-record-summary">
+    Showing
+    <strong id="visibleRecordCount">
+        {{ predictions|length }}
+    </strong>
+    predictions
+</div>
+
+                <div class="history-table-wrapper">
+
+                    <table class="history-table">
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Prediction</th>
+                                <th>Confidence</th>
+                                <th>Risk</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for row in predictions %}
+
+                            <tr
+    class="history-row"
+    data-status="{% if 'Likely to Be Approved' in row.prediction %}approved{% else %}rejected{% endif %}"
+    data-date="{{ row.prediction_date }}"
+>
+                                <td>#{{ row.id }}</td>
+
+                                <td>{{ row.prediction_date }}</td>
+
+                                <td>
+                                    {% if 'Likely to Be Approved' in row.prediction %}
+                                        <span class="status-badge approved">
+                                            Approved
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge rejected">
+                                            Rejected
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if row.confidence is not none %}
+                                        {{ row.confidence }}%
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="risk-history-badge {{ row.risk_level|lower }}">
+                                        {{ row.risk_level }}
+                                    </span>
+                                </td>
+                            </tr>
+
+                            {% else %}
+
+                            <tr>
+                                <td colspan="5" class="empty-history">
+                                    No prediction records found.
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script
+    src="{{ url_for('static', filename='js/script.js') }}"
+></script>
+
+<script id="approval-chart-data" type="application/json">
+    {{ approval_chart_data | tojson }}
+</script>
+
+<script id="risk-chart-data" type="application/json">
+    {{ risk_chart_data | tojson }}
+</script>
+
+
+<script id="daily-chart-data" type="application/json">
+    {{ daily_chart_data | tojson }}
+</script>
+
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
+
+</body>
+</html>
