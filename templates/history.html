@@ -1,43 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
+{% block title %}
+Prediction History | LoanWise AI
+{% endblock %}
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Prediction History | LoanWise AI</title>
-
-    <link rel="preconnect"
-     href="https://fonts.googleapis.com">
-
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    >
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}"
-    >
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-
-<body>
+{% block content %}
 
     <main class="history-page">
 
@@ -312,10 +279,6 @@
 
     </main>
 
-    <script
-    src="{{ url_for('static', filename='js/script.js') }}"
-></script>
-
 <script id="approval-chart-data" type="application/json">
     {{ approval_chart_data | tojson }}
 </script>
@@ -332,5 +295,24 @@
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 
 
-</body>
-</html>
+{% endblock %}
+
+{% block extra_js %}
+
+<script id="approval-chart-data" type="application/json">
+    {{ approval_chart_data | tojson }}
+</script>
+
+<script id="risk-chart-data" type="application/json">
+    {{ risk_chart_data | tojson }}
+</script>
+
+<script id="daily-chart-data" type="application/json">
+    {{ daily_chart_data | tojson }}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
+{% endblock %}

@@ -54,7 +54,7 @@ def login():
     if session.get("admin_logged_in"):
 
         return redirect(
-            url_for("history")
+         url_for("history.history")
         )
 
     error_message = None
@@ -102,8 +102,8 @@ def login():
                 ] = admin["username"]
 
                 return redirect(
-                    url_for("history")
-                )
+                 url_for("history.history")
+             )
 
             error_message = (
                 "Invalid username or password."
