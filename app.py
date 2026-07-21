@@ -19,10 +19,11 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(prediction_bp)
 app.register_blueprint(history_bp)
 
+initialize_database()
+
 # --------------------------------------------------
 # Start Flask application
 # --------------------------------------------------
 
 if __name__ == "__main__":
-    initialize_database()
     app.run(debug=True)
